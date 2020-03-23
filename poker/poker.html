@@ -1,0 +1,166 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script src="https://cdn.pubnub.com/pubnub.min.js"></script>
+
+<!-- Include the PubNub Library -->
+<script src="https://cdn.pubnub.com/pubnub.min.js"></script>
+
+<style>
+body {
+    padding: 10px;
+  }
+ #chat-output {
+    height: 150px;
+    overflow-y: scroll;
+  }
+ .me {
+  font-weight: bold;
+}
+</style>
+<form id="formwhoareyou">
+  <div class="input-group" id="whoareyou">
+  <label for="whobeye">Who be ye?</label>
+  <input type="text" id="whobeye">
+    <button type="submit" class="btn btn-default">Set</button>
+</div>
+</form>
+<div class="container-fluid" style="display:none;">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="alert alert-info">You are <strong id="whoami"></strong></div>
+        <div class="panel panel-default">
+          <div class="panel-heading">Online Users</div>
+          <div class="list-group" id="online-users"></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">Live Chat</div>
+          <ul class="list-group" id="chat-output"></ul>
+          <div class="panel-body">
+            <form id="chat">
+              <div class="input-group">
+                <input type="text" class="form-control" id="chat-input" />
+                <span class="input-group-btn">
+                  <button type="submit" class="btn btn-default">Send Message</button>
+                </span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Instantiate PubNub -->
+<script type="text/javascript">
+var channel = 'QSI-Poker';
+// use jQuery to find the DOM elements we care about
+var $input = $('#chat-input'); // where the user inputs chat text
+var $output = $('#chat-output'); // where output is sent
+var $myNameInput = $('#whobeye'); // where the user inputs chat text
+var me = 'JohnG';
+var pubnub;
+var now = new Date();
+var cookieExpire = new Date(+now);
+cookieExpire.setDate(now.getDate() + 30);
+var cookieName="faussettroadpokername";
+
+function setCookie(me) {
+  var name=cookieName + "=" + me;
+  var expire="expires=" + cookieExpire;
+  var cookie = name + "; " + expire + "; path=/";
+  document.cookie = cookie;
+}
+
+function pubnubInit(myUuid) {
+  pubnub = PUBNUB.init({
+    publish_key: 'pub-c-d40145d1-a88c-4e3e-bfa0-1963e5ea03ae',
+    subscribe_key: 'sub-c-f02b4f08-6be9-11ea-95b7-3ec3e5ef3302',
+    ssl : (('https:' == document.location.protocol) ? true : false),
+    uuid: myUuid
+  });
+
+  // when the "send message" form is submitted
+  $('#chat').submit(function() {
+    // publish input value to channel 
+    pubnub.publish({
+      channel: channel,
+      message: {
+        text: $input.val(),
+        username: me
+      }
+    });
+    
+    // clear the input field
+    $input.val('');
+    
+     // cancel event bubbling
+    return false;
+  });
+  
+  pubnub.subscribe({
+    channel: channel,
+    message: function(data) {
+    
+      var $line = $('<li class="list-group-item"><strong>' + data.username + ':</strong> </span>');
+      var $message = $('<span class="text" />').text(data.text).html();
+      if(data.uuid == me) {
+        $line.addClass('me');  
+      }
+
+      $line.append($message);
+      $output.append($line);
+      
+      $output.scrollTop($output[0].scrollHeight);
+
+    }, 
+    presence: function(data) {
+
+      console.log(data);
+
+      // get notified when people join
+      if(data.action == "join") {
+
+        var $new_user = $('<li id="' + data.uuid + '" class="list-group-item">' + data.uuid + '</li>')
+
+        $('#online-users').append($new_user);
+
+      }
+
+      // and when they leave
+      if(data.action == "leave"  || data.action == "timeout") {
+        $('#' + data.uuid).remove();
+      }
+
+    }
+  });
+
+
+}
+// start pubnub
+
+$('#whoami').text(me);
+
+
+// Get the users name
+$('#formwhoareyou').submit(function() {
+  me = $myNameInput.val();
+    // clear the input field
+  pubnubInit(me);
+  setCookie(me);
+
+  $("#formwhoareyou").hide();
+  $(".container-fluid").show();
+  $('#whoami').text(me);
+
+  //$myNameInput.val('');
+    
+  // cancel event bubbling
+  return false;
+    
+});
+  
+
+</script>
