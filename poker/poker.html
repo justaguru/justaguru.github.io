@@ -54,10 +54,15 @@ body {
 </div>
 <div class="container-fluid" style="display:none;">
   <div class="row">
-    Shared Cards:
+    Shared Cards: <span style="font-size:300%;color:red;">A&#9829; K&#9829; Q&#9829;</span>
   </div>
   <div class="row">
     My Hand:
+  </div>
+  <div class="row">
+    <button type="submit" class="btn btn-default">Bet/Raise</button>
+    <button type="submit" class="btn btn-default">Stay</button>
+    <button type="submit" class="btn btn-default">Fold</button>
   </div>
 </div>
 <!-- Instantiate PubNub -->
@@ -73,6 +78,7 @@ var now = new Date();
 var cookieExpire = new Date(+now);
 cookieExpire.setDate(now.getDate() + 30);
 var cookieName="faussettroadpokername";
+// club=&#9827;  diamond=&#9830;  heart=&#9829;  spade=
 
 function setCookie(me) {
   var name=cookieName + "=" + me;
