@@ -1,7 +1,6 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-<script src="https://cdn.pubnub.com/pubnub.min.js"></script>
 
 <!-- Include the PubNub Library -->
 <script src="https://cdn.pubnub.com/pubnub.min.js"></script>
@@ -54,10 +53,10 @@ body {
 </div>
 <div class="container-fluid" style="display:none;">
   <div class="row">
-    Shared Cards: <span style="font-size:300%;color:red;">A&#9829; K&#9829; Q&#9829;</span>
+    Shared Cards: <span id="sharedCards" style="font-size:300%"></span>
   </div>
   <div class="row">
-    My Hand:
+    My Hand: <span id="myCards" style="font-size:300%"></span>
   </div>
   <div class="row">
     <button type="submit" class="btn btn-default">Bet/Raise</button>
@@ -78,7 +77,7 @@ var now = new Date();
 var cookieExpire = new Date(+now);
 cookieExpire.setDate(now.getDate() + 30);
 var cookieName="faussettroadpokername";
-// club=&#9827;  diamond=&#9830;  heart=&#9829;  spade=
+// club=&#9827;  diamond=&#9830;  heart=&#9829;  spade=&#9824;
 
 function setCookie(me) {
   var name=cookieName + "=" + me;
@@ -117,16 +116,32 @@ function pubnubInit(myUuid) {
     channel: channel,
     message: function(data) {
     
-      var $line = $('<li class="list-group-item"><strong>' + data.username + ':</strong> </span>');
-      var $message = $('<span class="text" />').text(data.text).html();
-      if(data.uuid == me) {
-        $line.addClass('me');  
-      }
+      if ("text" in data) {
+        var $line = $('<li class="list-group-item"><strong>' + data.username + ':</strong> </span>');
+        var $message = $('<span class="text" />').text(data.text).html();
+        if (data.username == me) {
+          $line.addClass('me');  
+        }
 
-      $line.append($message);
-      $output.append($line);
-      
-      $output.scrollTop($output[0].scrollHeight);
+        $line.append($message);
+        $output.append($line);
+        
+        $output.scrollTop($output[0].scrollHeight);
+      }
+      if ("sharedCards" in data) {
+        $("#sharedCards").html(data.sharedCards);
+      }
+      if ("myCards" in data) {
+        if (data.username == me) {
+          $("#myCards").html(data.myCards);
+        }
+      }
+      if ("clear" in data) {
+        if (data.clear == true) {
+          $("#myCards").html('');
+          $("#sharedCards").html('');
+        }
+      }
 
     }, 
     presence: function(data) {
