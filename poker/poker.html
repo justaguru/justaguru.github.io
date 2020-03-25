@@ -10,7 +10,7 @@ body {
     padding: 10px;
   }
  #chat-output {
-    height: 150px;
+    height: 250px;
     overflow-y: scroll;
   }
  .me {
@@ -26,14 +26,17 @@ body {
 </form>
 <div class="container-fluid" style="display:none;">
   <div class="row">
-    <div class="col-md-6">
-      <div class="alert alert-info">You are <strong id="whoami"></strong></div>
+    <div class="col-md-4">
       <div class="panel panel-default">
         <div class="panel-heading">Online Users</div>
         <div class="list-group" id="online-users"></div>
+        <div class="list-group" id="userTable"></div>
       </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
+      <div class="alert alert-info">You are <strong id="whoami"></strong></div>
+    </div>
+    <div class="col-md-4">
       <div class="panel panel-default">
         <div class="panel-heading">Live Chat</div>
         <ul class="list-group" id="chat-output"></ul>
@@ -62,6 +65,7 @@ body {
     <button type="submit" class="btn btn-default">Bet/Raise</button>
     <button type="submit" class="btn btn-default">Stay</button>
     <button type="submit" class="btn btn-default">Fold</button>
+    <button type="submit" class="btn btn-default">Show Hand</button>
   </div>
 </div>
 <!-- Instantiate PubNub -->
@@ -72,6 +76,10 @@ var $input = $('#chat-input'); // where the user inputs chat text
 var $output = $('#chat-output'); // where output is sent
 var $myNameInput = $('#whobeye'); // where the user inputs chat text
 var me = 'JohnG';
+var myInfo = {"me": me,
+    "money": 0,
+    "myTurn": false
+  }
 var pubnub;
 var now = new Date();
 var cookieExpire = new Date(+now);
@@ -79,11 +87,21 @@ cookieExpire.setDate(now.getDate() + 30);
 var cookieName="faussettroadpokername";
 // club=&#9827;  diamond=&#9830;  heart=&#9829;  spade=&#9824;
 
+if (getCookie() != null) {
+  var cookieVal = getCookie();
+  setMe(cookieVal);
+}
+
 function setCookie(me) {
   var name=cookieName + "=" + me;
   var expire="expires=" + cookieExpire;
   var cookie = name + "; " + expire + "; path=/";
   document.cookie = cookie;
+}
+
+function getCookie() {
+    var v = document.cookie.match('(^|;) ?' + cookieName + '=([^;]*)(;|$)');
+    return v ? v[2] : null;
 }
 
 function pubnubInit(myUuid) {
@@ -136,6 +154,9 @@ function pubnubInit(myUuid) {
           $("#myCards").html(data.myCards);
         }
       }
+      if ("userTable" in data) {
+          $("#userTable").html(data.userTable);
+      }
       if ("clear" in data) {
         if (data.clear == true) {
           $("#myCards").html('');
@@ -150,18 +171,14 @@ function pubnubInit(myUuid) {
 
       // get notified when people join
       if(data.action == "join") {
-
         var $new_user = $('<li id="' + data.uuid + '" class="list-group-item">' + data.uuid + '</li>')
-
         $('#online-users').append($new_user);
-
       }
 
       // and when they leave
       if(data.action == "leave"  || data.action == "timeout") {
         $('#' + data.uuid).remove();
       }
-
     }
   });
 
@@ -174,14 +191,17 @@ $('#whoami').text(me);
 
 // Get the users name
 $('#formwhoareyou').submit(function() {
-  me = $myNameInput.val();
+  
+  var myName = $myNameInput.val();
+  //me = $myNameInput.val();
     // clear the input field
-  pubnubInit(me);
-  setCookie(me);
+  setMe(myName);
+//  pubnubInit(me);
+//  setCookie(me);
 
-  $("#formwhoareyou").hide();
-  $(".container-fluid").show();
-  $('#whoami').text(me);
+//  $("#formwhoareyou").hide();
+//  $(".container-fluid").show();
+//  $('#whoami').text(me);
 
   //$myNameInput.val('');
     
@@ -190,5 +210,14 @@ $('#formwhoareyou').submit(function() {
     
 });
   
+// name entered or read from cookie, use it
+function setMe(name) {
+  pubnubInit(name);
+  setCookie(name);
+  me = name;
 
+  $("#formwhoareyou").hide();
+  $(".container-fluid").show();
+  $('#whoami').text(name);
+}
 </script>
