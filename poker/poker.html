@@ -3,7 +3,7 @@
 <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 
 <!-- Include the PubNub Library -->
-<script src="https://cdn.pubnub.com/pubnub.min.js"></script>
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.27.4.js"></script>
 
 <style>
 body {
@@ -65,7 +65,10 @@ body {
     <button type="submit" class="btn btn-default">Bet/Raise</button>
     <button type="submit" class="btn btn-default">Stay</button>
     <button type="submit" class="btn btn-default">Fold</button>
-    <button type="submit" class="btn btn-default">Show Hand</button>
+    <button type="submit" id="btnShowHand" class="btn btn-default">Show Hand</button>
+  </div>
+  <div class="row">
+    <div id="casinoMessages"></div>
   </div>
 </div>
 <!-- Instantiate PubNub -->
@@ -105,22 +108,85 @@ function getCookie() {
 }
 
 function pubnubInit(myUuid) {
-  pubnub = PUBNUB.init({
-    publish_key: 'pub-c-d40145d1-a88c-4e3e-bfa0-1963e5ea03ae',
-    subscribe_key: 'sub-c-f02b4f08-6be9-11ea-95b7-3ec3e5ef3302',
-    ssl : (('https:' == document.location.protocol) ? true : false),
-    uuid: myUuid
-  });
+    pubnub = new PubNub({
+        publishKey: 'pub-c-d40145d1-a88c-4e3e-bfa0-1963e5ea03ae',
+        subscribeKey: 'sub-c-f02b4f08-6be9-11ea-95b7-3ec3e5ef3302',
+        ssl : (('https:' == document.location.protocol) ? true : false),
+        uuid: myUuid
+    });
+
+
+    function publishSampleMessage() {
+        console.log("Since we're publishing on subscribe connectEvent, we're sure we'll receive the following publish.");
+        var publishConfig = {
+            channel : channel,
+            message : "Hello from PubNub Docs!"
+        }
+        pubnub.publish(publishConfig, function(status, response) {
+            console.log(status, response);
+        })
+    }
+    pubnub.addListener({
+        status: function(statusEvent) {
+            if (statusEvent.category === "PNConnectedCategory") {
+                publishSampleMessage();
+            }
+        },
+        message: function(message) {
+            console.log("New Message!!", message);
+            var data = message.message;
+            if (typeof data == "string") {
+                var $line = $('<li class="list-group-item"><strong>' + message.publisher + ':</strong> </span>');
+                var $message = $('<span class="text" />').text(data).html();
+                if (data == me) {
+                    $line.addClass('me');  
+                }
+
+                $line.append($message);
+                $output.append($line);
+                
+                $output.scrollTop($output[0].scrollHeight);
+            }
+            if (typeof data == "object") {
+                if ("sharedCards" in data) {
+                    $("#sharedCards").html(data.sharedCards);
+                }
+                if ("myCards" in data) {
+                    if (data.username == me) {
+                    $("#myCards").html(data.myCards);
+                    }
+                }
+                if ("casinoMsg" in data) {
+                    $("#casinoMessages").append(data.casinoMsg + "<br />");
+                }
+                if ("userTable" in data) {
+                    $("#userTable").html(data.userTable);
+                }
+                if ("clear" in data) {
+                    if (data.clear == true) {
+                    $("#myCards").html('');
+                    $("#sharedCards").html('');
+                    $("#casinoMessages").html('');
+                    }
+                }
+            }
+        },
+        presence: function(presenceEvent) {
+            console.log("Presence!!", message);
+            // handle presence
+        }
+    })      
+    console.log("Subscribing..");
+    pubnub.subscribe({
+        channels: [channel]
+    });
 
   // when the "send message" form is submitted
   $('#chat').submit(function() {
     // publish input value to channel 
     pubnub.publish({
       channel: channel,
-      message: {
-        text: $input.val(),
-        username: me
-      }
+      message: $input.val()
     });
     
     // clear the input field
@@ -129,59 +195,6 @@ function pubnubInit(myUuid) {
      // cancel event bubbling
     return false;
   });
-  
-  pubnub.subscribe({
-    channel: channel,
-    message: function(data) {
-    
-      if ("text" in data) {
-        var $line = $('<li class="list-group-item"><strong>' + data.username + ':</strong> </span>');
-        var $message = $('<span class="text" />').text(data.text).html();
-        if (data.username == me) {
-          $line.addClass('me');  
-        }
-
-        $line.append($message);
-        $output.append($line);
-        
-        $output.scrollTop($output[0].scrollHeight);
-      }
-      if ("sharedCards" in data) {
-        $("#sharedCards").html(data.sharedCards);
-      }
-      if ("myCards" in data) {
-        if (data.username == me) {
-          $("#myCards").html(data.myCards);
-        }
-      }
-      if ("userTable" in data) {
-          $("#userTable").html(data.userTable);
-      }
-      if ("clear" in data) {
-        if (data.clear == true) {
-          $("#myCards").html('');
-          $("#sharedCards").html('');
-        }
-      }
-
-    }, 
-    presence: function(data) {
-
-      console.log(data);
-
-      // get notified when people join
-      if(data.action == "join") {
-        var $new_user = $('<li id="' + data.uuid + '" class="list-group-item">' + data.uuid + '</li>')
-        $('#online-users').append($new_user);
-      }
-
-      // and when they leave
-      if(data.action == "leave"  || data.action == "timeout") {
-        $('#' + data.uuid).remove();
-      }
-    }
-  });
-
 
 }
 // start pubnub
@@ -191,20 +204,24 @@ $('#whoami').text(me);
 
 // Get the users name
 $('#formwhoareyou').submit(function() {
-  
   var myName = $myNameInput.val();
-  //me = $myNameInput.val();
-    // clear the input field
   setMe(myName);
-//  pubnubInit(me);
-//  setCookie(me);
 
-//  $("#formwhoareyou").hide();
-//  $(".container-fluid").show();
-//  $('#whoami').text(me);
-
-  //$myNameInput.val('');
+  // cancel event bubbling
+  return false;
     
+});
+  
+// Show Hand to everyone
+$('#btnShowHand').click(function() {
+  pubnub.publish({
+      channel: channel,
+      message: {
+        casinoAction: "showHand",
+        username: me
+      }
+    });
+
   // cancel event bubbling
   return false;
     
