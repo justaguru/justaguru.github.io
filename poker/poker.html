@@ -245,14 +245,6 @@
   });
 
   // Show Hand to everyone
-  $('#btnShowHand').click(function () {
-    var message = { casinoAction: "showHand", username: me };
-    publishMsg(message);
-    // cancel event bubbling
-    return false;
-  });
-
-  // Show Hand to everyone
   $('#btnBet').click(function () {
     var amount=$("#amount").val();
     var message = { casinoAction: "bet", username: me, amount: amount };
