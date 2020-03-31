@@ -37,6 +37,7 @@
     </div>
     <div class="col-md-4">
       <div class="alert alert-info">You are <strong id="whoami"></strong></div>
+      <div class="list-group" id="gameStatus"></div>
     </div>
     <div class="col-md-4">
       <div class="panel panel-default">
@@ -180,6 +181,9 @@
           }
           if ("userTable" in data) {
             $("#userTable").html(data.userTable);
+          }
+          if ("gameStatus" in data) {
+            $("#gameStatus").html(data.gameStatus);
           }
           if ("clear" in data) {
             if (data.clear == true) {
