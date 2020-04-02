@@ -128,6 +128,20 @@
     return cookieMatch ? cookieMatch[2] : null;
   }
 
+  // display message in chat area
+  function addChatMessage(msg, usr) {
+    var $line = $('<li class="list-group-item"><strong>' + usr + ':</strong> </span>');
+    var $message = $('<span class="text" />').text(msg).html();
+    if (usr == me) {
+      $line.addClass('me');
+    }
+
+    $line.append($message);
+    $output.append($line);
+
+    $output.scrollTop($output[0].scrollHeight);
+  }
+
   function pubnubInit(myUuid) {
     pubnub = new PubNub({
       publishKey: cloudPubKey,
@@ -137,13 +151,7 @@
     });
 
     function publishSampleMessage() {
-      var publishConfig = {
-        channel: channel,
-        message: "Hello from " + me
-      }
-      pubnub.publish(publishConfig, function (status, response) {
-        console.log(status, response);
-      })
+      publishMsg("Hello from " + me);
     }
 
     pubnub.addListener({
@@ -156,17 +164,9 @@
         if (DEBUG) console.log("New Message!!", message);
         var data = message.message;
         if (typeof data == "string") {
-          var $line = $('<li class="list-group-item"><strong>' + message.publisher + ':</strong> </span>');
-          var $message = $('<span class="text" />').text(data).html();
-          if (data == me) {
-            $line.addClass('me');
-          }
-
-          $line.append($message);
-          $output.append($line);
-
-          $output.scrollTop($output[0].scrollHeight);
+          addChatMessage(data, message.publisher);
         }
+        // Ok, here is the main area where we handle incoming actions, showing cards, displaying whose turn, etc...
         if (typeof data == "object") {
           if ("sharedCards" in data) {
             $("#sharedCards").html(data.sharedCards);
@@ -206,17 +206,9 @@
 
     // when the "send message" form is submitted
     $('#chat').submit(function () {
-      // publish input value to channel 
-      pubnub.publish({
-        channel: channel,
-        message: $input.val()
-      });
-
-      // clear the input field
-      $input.val('');
-
-      // cancel event bubbling
-      return false;
+      publishMsg( $input.val() );
+      $input.val(''); // clear the input field
+      return false; // cancel event bubbling
     });
 
   }
