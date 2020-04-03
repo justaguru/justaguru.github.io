@@ -38,6 +38,7 @@
     <div class="col-md-4">
       <div class="alert alert-info">You are <strong id="whoami"></strong></div>
       <div class="list-group" id="gameStatus"></div>
+      <div class="list-group" id="yourTurn" style="font-size:200%;display:none;"><b>YOUR TURN!!!</b></div>
     </div>
     <div class="col-md-4">
       <div class="panel panel-default">
@@ -83,7 +84,7 @@
       <input type="number" min="50" step="50" id="amount" name="amount" value=100>
     </div>
   <div class="row">
-    <div id="casinoMessages" style="font-size:200%"></div>
+    <div id="casinoMessages" style="font-size:300%"></div>
   </div>
 </div>
 <!-- Instantiate PubNub -->
@@ -114,6 +115,7 @@
     setMe(cookieVal);
   }
 
+  // set the cookie (30 days)
   function setCookie(me) {
     var cookieExpire = new Date(+now);
     cookieExpire.setDate(now.getDate() + cookieExpireDays);
@@ -181,6 +183,11 @@
           }
           if ("userTable" in data) {
             $("#userTable").html(data.userTable);
+          }
+          if ("yourTurn" in data) {
+            if (data.yourTurn == me) {
+              $("#yourTurn").show();
+            } else {$("#yourTurn").hide();}
           }
           if ("gameStatus" in data) {
             $("#gameStatus").html(data.gameStatus);
