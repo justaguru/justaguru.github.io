@@ -18,6 +18,9 @@
   .me {
     font-weight: bold;
   }
+  tr.table-folded  {
+    background-color: #D3D3D3; 
+  }
 </style>
 <form id="formwhoareyou">
   <div class="input-group" id="whoareyou">
@@ -73,9 +76,11 @@
     My Hand: <span id="myCards" class="showCardStyle" style="font-size:400%"></span>
   </div>
   <div class="row">
-    <button type="submit" id="btnBet" class="btn btn-default">Bet/Raise</button>
-    <button type="submit" id="btnStay" class="btn btn-default">Stay</button>
-    <button type="submit" id="btnFold" class="btn btn-default">Fold</button>
+    <button type="submit" id="btnBet" class="btn-betting btn btn-default">Bet/Raise</button>
+    <button type="submit" id="btnCall" class="btn-betting btn btn-default">Call</button>
+    <button type="submit" id="btnStay" class="btn-betting btn btn-default">Stay</button>
+    <button type="submit" id="btnFold" class="btn-betting btn btn-default">Fold</button>
+    <button type="submit" id="btnAllIn" class="btn-betting btn btn-default">All In</button>
     <button type="submit" id="btnShowHand" class="btn btn-default">Show Hand</button>
   </div>
   <div class="row">
@@ -84,7 +89,10 @@
       <input type="number" min="50" step="50" id="amount" name="amount" value=100>
     </div>
   <div class="row">
-    <div id="casinoMessages" style="font-size:300%"></div>
+    <div id="otherPlayersCards" class="showCardStyle" style="font-size:400%"></div>
+  </div>
+  <div class="row">
+    <div id="casinoMessages" style="font-size:200%"></div>
   </div>
 </div>
 <!-- Instantiate PubNub -->
@@ -181,13 +189,21 @@
           if ("casinoMsg" in data) {
             $("#casinoMessages").append(data.casinoMsg + "<br />");
           }
+          if ("otherPlayersCards" in data) {
+            $("#otherPlayersCards").append(data.otherPlayersCards + "<br />");
+          }
+          //showUsersHand
           if ("userTable" in data) {
             $("#userTable").html(data.userTable);
           }
           if ("yourTurn" in data) {
             if (data.yourTurn == me) {
+              $(".btn-betting").prop('disabled', false);
               $("#yourTurn").show();
-            } else {$("#yourTurn").hide();}
+            } else {
+              $(".btn-betting").prop('disabled', true);
+              $("#yourTurn").hide();
+            }
           }
           if ("gameStatus" in data) {
             $("#gameStatus").html(data.gameStatus);
@@ -197,6 +213,7 @@
               $("#myCards").html('');
               $("#sharedCards").html('');
               $("#casinoMessages").html('');
+              $("#otherPlayersCards").html('');
             }
           }
         }
@@ -251,6 +268,23 @@
   $('#btnBet').click(function () {
     var amount=$("#amount").val();
     var message = { casinoAction: "bet", username: me, amount: amount };
+    publishMsg(message);
+    // cancel event bubbling
+    return false;
+  });
+
+  // Show Hand to everyone
+  $('#btnCall').click(function () {
+    var message = { casinoAction: "call" };
+    publishMsg(message);
+    // cancel event bubbling
+    return false;
+  });
+
+  // Show Hand to everyone
+  $('#btnFold').click(function () {
+    var amount=$("#amount").val();
+    var message = { casinoAction: "fold" };
     publishMsg(message);
     // cancel event bubbling
     return false;
